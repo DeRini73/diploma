@@ -82,7 +82,7 @@ class SupplierStatusView(APIView):
 
         is_active = request.data.get('is_active')
         if is_active is None:
-            return Response({'error': 'Укажите is_active (true/false)!'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Укажите признак is_active (true/false)!'}, status=status.HTTP_400_BAD_REQUEST)
 
         shop.is_active = is_active
         shop.save()

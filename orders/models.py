@@ -43,6 +43,7 @@ class Order(models.Model):
     contact = models.ForeignKey(Contact, on_delete=models.SET_NULL, null=True, verbose_name='Контакт доставки.')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='new', verbose_name='Статус.')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания.')
+    shipping_address = models.TextField(blank=True, verbose_name='Адрес доставки')
 
     class Meta:
         verbose_name = 'Заказ'

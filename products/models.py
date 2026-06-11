@@ -3,6 +3,7 @@ from django.db import models
 
 class Shop(models.Model):
     name = models.CharField(max_length=100, unique=True, verbose_name='Название магазина.')
+    url = models.URLField(blank=True, null=True, verbose_name='Ссылка')
     is_active = models.BooleanField(default=True, verbose_name='Принимает заказы.')
 
     class Meta:
@@ -15,7 +16,7 @@ class Shop(models.Model):
 
 class Category(models.Model):
     name = models.CharField(max_length=100, verbose_name='Название категории.')
-    external_id = models.PositiveIntegerField(unique=True, verbose_name='Внешний ID.')
+    shops = models.ManyToManyField(Shop, related_name='categories', verbose_name='Магазины')
 
     class Meta:
         verbose_name = 'Категория'
@@ -47,7 +48,7 @@ class Product(models.Model):
 
 class ProductParameter(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='parameters')
-    name = models.CharField(max_length=200, verbose_name='Название характеристики.')
+    name = models.CharField(max_length=200, verbose_name='Характеристика.')
     value = models.CharField(max_length=500, verbose_name='Значение.')
 
     class Meta:

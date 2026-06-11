@@ -26,7 +26,6 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'django_filters',
     'djoser',
-    'diplom',
     'users',
     'products',
     'orders',
@@ -65,11 +64,11 @@ WSGI_APPLICATION = 'diplom.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'rinat_db', # Указываем наименование своей БД.
-        'USER': 'derini', # Указываем имя пользователя-владельца БД.
-        'PASSWORD': '1234', # Указываем пароль от своей БД.
-        'HOST': 'localhost', # Скорректировать при необходимости.
-        'PORT': '5432', # Скорректировать при необходимости.
+        'NAME': os.getenv('DB_NAME'),
+        'USER': os.getenv('DB_USER'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': os.getenv('DB_PORT', '5432'),
     }
 }
 

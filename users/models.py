@@ -49,18 +49,18 @@ class User(AbstractUser):
 
 
 class Contact(models.Model):
+    TYPE_CHOICES = [
+        ('phone', 'Телефон'),
+        ('address', 'Адрес'),
+    ]
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='contacts')
-    phone = models.CharField(max_length=20, verbose_name='Телефон')
-    city = models.CharField(max_length=100, verbose_name='Город')
-    street = models.CharField(max_length=200, verbose_name='Улица')
-    house = models.CharField(max_length=20, verbose_name='Дом')
-    building = models.CharField(max_length=20, blank=True, verbose_name='Корпус')
-    structure = models.CharField(max_length=20, blank=True, verbose_name='Строение')
-    apartment = models.CharField(max_length=20, blank=True, verbose_name='Квартира')
+    type = models.CharField(max_length=20,choices=TYPE_CHOICES,verbose_name='Контактные данные')
+    value = models.CharField(max_length=200, verbose_name='Значение')
 
     class Meta:
         verbose_name = 'Контакт'
         verbose_name_plural = 'Контакты'
 
     def __str__(self):
-        return f"Контакт {self.user.email}, Тел. {self.user.phone}: {self.city}, {self.street}, {self.house}"
+        return f'{self.get_type_display()}: {self.value}'

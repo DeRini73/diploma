@@ -23,4 +23,4 @@ class CustomUserAdmin(UserAdmin):
 
 @admin.register(Contact)
 class ContactAdmin(admin.ModelAdmin):
-    list_display = ('user', 'city', 'street', 'house', 'phone')
+    list_display = ('user', 'type', 'value')

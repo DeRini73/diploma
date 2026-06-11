@@ -79,20 +79,16 @@ class OrderViewSet(viewsets.ModelViewSet):
         if user.is_staff:
             return Order.objects.all().prefetch_related('items__product')
 
-        supplier_shop = Shop.objects.filter(user=user).first()
-        if supplier_shop:
-            return Order.objects.filter(items__shop=supplier_shop).distinct().prefetch_related('items__product')
-
         return Order.objects.filter(user=user).prefetch_related('items__product')
 
     @transaction.atomic
     def create(self, request):
         contact_id = request.data.get('contact_id')
         if not contact_id:
-            return Response({'error': 'Укажите contact_id'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Укажите contact_id.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            user_contact = request.user.contacts.get(id=contact_id)
+            user_contact = request.user.contacts.get(id=contact_id, type='address')
         except Contact.DoesNotExist:
             return Response({'error': 'Контакт не найден!'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -109,7 +105,8 @@ class OrderViewSet(viewsets.ModelViewSet):
 
         order = Order.objects.create(
             user=request.user,
-            contact_id=contact_id,
+            contact = user_contact,
+            shipping_address=str(user_contact),
             status='new'
         )
 
@@ -135,7 +132,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         cart.items.all().delete()
 
 
-        contact_str = f"г. {user_contact.city}, ул. {user_contact.street}, д. {user_contact.house}."
+        contact_str = str(user_contact)
 
 
         send_order_confirmation.delay(order.id, request.user.email, contact_str, total_sum)

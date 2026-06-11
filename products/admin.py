@@ -22,4 +22,4 @@ class ShopAdmin(admin.ModelAdmin):
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ('name', 'external_id')
+    list_display = ('name', )

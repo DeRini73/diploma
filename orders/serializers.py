@@ -12,6 +12,7 @@ class CartItemSerializer(serializers.ModelSerializer):
         read_only_fields = ('shop',)
 
     def validate(self, value):
+        '''Проверка количества товара (опционально).'''
         if value <= 0:
             raise serializers.ValidationError('Количество товара должно быть больше 0!')
         return value
@@ -27,7 +28,6 @@ class CartSerializer(serializers.ModelSerializer):
 
 class OrderItemSerializer(serializers.ModelSerializer):
     product_name = serializers.ReadOnlyField(source='product.name')
-    shop_name = serializers.ReadOnlyField(source='shop.name')
 
     class Meta:
         model = OrderItem
@@ -38,16 +38,16 @@ class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
     contact_info = serializers.SerializerMethodField()
     total_sum = serializers.SerializerMethodField()
-    status_display = serializers.CharField(source='get_status_display', read_only=True)
 
     class Meta:
         model = Order
-        fields = ('id', 'user', 'contact', 'contact_info', 'status', 'created_at', 'items', 'total_sum')
-        read_only_fields = ('user', 'created_at')
+        fields = ('id', 'user', 'contact', 'contact_info', 'shipping_address', 'status',
+                  'created_at', 'items', 'total_sum')
+        read_only_fields = ('user', 'created_at','shipping_address')
 
     def get_contact_info(self, obj):
         if obj.contact:
-            return f"г. {obj.contact.city}, ул. {obj.contact.street}, д. {obj.contact.house}."
+            return str(obj.contact)
         return "Адрес не указан."
 
     def get_total_sum(self, obj):
