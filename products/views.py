@@ -42,13 +42,18 @@ class SupplierUpdateView(APIView):
         shop, _ = Shop.objects.get_or_create(name=shop_name)
 
         for cat_data in data.get('categories', []):
-            Category.objects.get_or_create(
+            category,_ = Category.objects.get_or_create(
                 external_id=cat_data['id'],
                 defaults={'name': cat_data['name']}
             )
+            category.shops.add(shop)
 
         for item in data.get('goods', []):
-            category = Category.objects.get(external_id=item['category'])
+            try:
+                category = Category.objects.get(external_id=item['category'])
+            except Category.DoesNotExist:
+                continue
+
             product, _ = Product.objects.update_or_create(
                 external_id=item['id'],
                 shop=shop,

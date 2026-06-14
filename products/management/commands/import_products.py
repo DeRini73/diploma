@@ -23,13 +23,20 @@ class Command(BaseCommand):
         shop, _ = Shop.objects.get_or_create(name=shop_name)
 
         for cat_data in data.get('categories', []):
-            Category.objects.get_or_create(
+            category,_ = Category.objects.get_or_create(
                 external_id=cat_data['id'],
                 defaults={'name': cat_data['name']}
             )
+            category.shops.add(shop)
 
         for item in data.get('goods', []):
-            category = Category.objects.get(external_id=item['category'])
+            try:
+                category = Category.objects.get(external_id=item['category'])
+            except Category.DoesNotExist:
+                self.stdout.write(self.style.WARNING(
+                    f'Товар {item["name"]} пропущен, так как не определена категория "external_id":{item["category"]}.'
+                ))
+                continue
 
             product, created = Product.objects.update_or_create(
                 external_id=item['id'],
@@ -54,4 +61,4 @@ class Command(BaseCommand):
                     value=str(param_value)
                 )
 
-        self.stdout.write(self.style.SUCCESS(f'Импорт завершён. Магазин: {shop_name} обновлен'))
+        self.stdout.write(self.style.SUCCESS(f'Импорт завершён. Магазин: {shop_name} обновлен.'))

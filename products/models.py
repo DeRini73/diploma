@@ -15,6 +15,7 @@ class Shop(models.Model):
 
 
 class Category(models.Model):
+    external_id = models.PositiveIntegerField(unique=True,verbose_name='Внешний ID')
     name = models.CharField(max_length=100, verbose_name='Название категории.')
     shops = models.ManyToManyField(Shop, related_name='categories', verbose_name='Магазины')
 
