@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     'users',
     'products',
     'orders',
+    'easy_thumbnails',
 ]
 
 MIDDLEWARE = [
@@ -40,6 +41,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'social_django.middleware.SocialAuthExceptionMiddleware',
+    'diplom.middleware.HawkMiddleware',
 ]
 
 ROOT_URLCONF = 'diplom.urls'
@@ -157,6 +159,14 @@ CACHES = {
         'LOCATION': 'redis://localhost:6379/1',
         'OPTIONS': {'CLIENT_CLASS': 'django_redis.client.DefaultClient'}
     }
+}
+
+
+THUMBNAIL_ALIASES = {
+    'products.Product.image': {
+        'small': {'size': (100, 100), 'crop': True},
+        'medium': {'size': (300, 300), 'crop': False},
+    },
 }
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

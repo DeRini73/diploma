@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.views.generic import RedirectView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+from users.views import trigger_hawk_error
 
 
 urlpatterns = [
@@ -14,4 +15,5 @@ urlpatterns = [
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     path('oauth/', include('social_django.urls', namespace='social')),
+    path('hawk-test/', trigger_hawk_error, name='hawk-test'),
     ]
