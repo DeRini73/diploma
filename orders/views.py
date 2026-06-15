@@ -1,15 +1,17 @@
-from rest_framework import viewsets, permissions, status
+from rest_framework import viewsets, permissions, status, serializers
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db import transaction
+from drf_spectacular.utils import extend_schema, inline_serializer, OpenApiResponse
 from users.models import Contact
 from .models import Cart, CartItem, Order, OrderItem
 from .serializers import CartSerializer, CartItemSerializer, OrderSerializer, OrderStatusSerializer
-from products.models import Product, Shop
+from products.models import Product
 from .tasks import send_order_confirmation, send_order_to_admin
 
 
 class CartViewSet(viewsets.GenericViewSet):
+    """Управление корзиной товаров текущего авторизованного пользователя."""
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = CartSerializer
 
@@ -17,11 +19,32 @@ class CartViewSet(viewsets.GenericViewSet):
         cart, _ = Cart.objects.get_or_create(user=self.request.user)
         return cart
 
+    @extend_schema(
+        summary="Просмотр корзины.",
+        description="Возвращает состав текущей корзины пользователя вместе со списком добавленных товаров.",
+        responses={200: CartSerializer}
+    )
     def list(self, request):
         cart = self.get_cart()
         serializer = self.get_serializer(cart)
         return Response(serializer.data)
 
+    @extend_schema(
+        summary="Добавление товара в корзину.",
+        description="Добавляет указанный товар в корзину. Если товар уже есть, увеличивает его количество.",
+        request=inline_serializer(
+            name='CartAddItemRequest',
+            fields={
+                'product_id': serializers.IntegerField(help_text="ID добавляемого товара"),
+                'quantity': serializers.IntegerField(help_text="Количество товара (по умолчанию 1)", default=1, required=False)
+            }
+        ),
+        responses={
+            201: CartItemSerializer,
+            400: OpenApiResponse(description="Недостаточно товара на складе."),
+            404: OpenApiResponse(description="Товар не найден.")
+        }
+    )
     @action(detail=False, methods=['post'])
     def add_item(self, request):
         product_id = request.data.get('product_id')
@@ -48,6 +71,20 @@ class CartViewSet(viewsets.GenericViewSet):
 
         return Response(CartItemSerializer(item).data, status=status.HTTP_201_CREATED)
 
+    @extend_schema(
+        summary="Удаление позиции из корзины.",
+        description="Удаляет одну товарную позицию (CartItem) из корзины текущего пользователя по её ID.",
+        request=inline_serializer(
+            name='CartRemoveItemRequest',
+            fields={
+                'item_id': serializers.IntegerField(help_text="ID позиции внутри корзины (CartItem ID)")
+            }
+        ),
+        responses={
+            204: OpenApiResponse(description="Позиция успешно удалена"),
+            404: OpenApiResponse(description="Позиция не найдена")
+        }
+    )
     @action(detail=False, methods=['post'])
     def remove_item(self, request):
         item_id = request.data.get('item_id')
@@ -59,6 +96,11 @@ class CartViewSet(viewsets.GenericViewSet):
         item.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    @extend_schema(
+        summary="Очистить корзину.",
+        description="Полностью удаляет все товары из корзины текущего пользователя.",
+        responses={204: OpenApiResponse(description="Корзина успешно очищена")}
+    )
     @action(detail=False, methods=['post'])
     def clear(self, request):
         cart = self.get_cart()
@@ -81,6 +123,21 @@ class OrderViewSet(viewsets.ModelViewSet):
 
         return Order.objects.filter(user=user).prefetch_related('items__product')
 
+    @extend_schema(
+        summary="Оформить заказ из корзины",
+        description="Создает новый заказ на основе текущей корзины пользователя, списывает остатки и отправляет уведомления.",
+        request=inline_serializer(
+            name='OrderCreateRequest',
+            fields={
+                'contact_id': serializers.IntegerField(help_text="ID контакта пользователя с типом 'address'")
+            }
+        ),
+        responses={
+            201: OrderSerializer,
+            400: OpenApiResponse(description="Корзина пуста или недостаточно остатков на складе"),
+            404: OpenApiResponse(description="Контактные данные не найдены")
+        }
+    )
     @transaction.atomic
     def create(self, request):
         contact_id = request.data.get('contact_id')
@@ -105,7 +162,7 @@ class OrderViewSet(viewsets.ModelViewSet):
 
         order = Order.objects.create(
             user=request.user,
-            contact = user_contact,
+            contact=user_contact,
             shipping_address=str(user_contact),
             status='new'
         )
@@ -128,12 +185,9 @@ class OrderViewSet(viewsets.ModelViewSet):
             cart_item.product.save()
             items_info.append(f"- {cart_item.product.name} x {cart_item.quantity} ({cart_item.shop.name})")
 
-
         cart.items.all().delete()
 
-
         contact_str = str(user_contact)
-
 
         send_order_confirmation.delay(order.id, request.user.email, contact_str, total_sum)
         send_order_to_admin.delay(order.id, "\n".join(items_info), total_sum)
@@ -141,6 +195,15 @@ class OrderViewSet(viewsets.ModelViewSet):
         serializer = OrderSerializer(order)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+    @extend_schema(
+        summary="Изменение статуса заказа",
+        description="Позволяет обновить текущий статус заказа администратором или менеджером.",
+        request=OrderStatusSerializer,
+        responses={
+            200: OrderSerializer,
+            400: OpenApiResponse(description="Передан недопустимый статус")
+        }
+    )
     @action(detail=True, methods=['patch'])
     def update_status(self, request, pk=None):
         order = self.get_object()

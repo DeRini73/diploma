@@ -130,9 +130,16 @@ REST_FRAMEWORK = {
 }
 
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'Сервис автоматизации закупок',
-    'DESCRIPTION': 'API для розничной сети',
+    'TITLE': 'Сервис автоматизации закупок (Розница)',
+    'DESCRIPTION': 'REST API для оформления заказов, управления корзиной и интеграции с поставщиками.',
     'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
+    'SECURITY': [
+        {
+            'jwtAuth': [],
+        }
+    ],
 }
 
 SIMPLE_JWT = {
@@ -160,7 +167,6 @@ CACHES = {
         'OPTIONS': {'CLIENT_CLASS': 'django_redis.client.DefaultClient'}
     }
 }
-
 
 THUMBNAIL_ALIASES = {
     'products.Product.image': {
